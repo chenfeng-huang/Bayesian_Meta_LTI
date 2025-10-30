@@ -4,7 +4,7 @@ This document describes the full pipeline for Bayesian meta‑learning of LTI sy
 
 ## Overview
 
-- Goal: Learn a hierarchical prior over task dynamics matrices so that we can adapt quickly to new tasks with few observations.
+- Goal: Learn a hierarchical prior over task dynamics matrices so that I can adapt quickly to new tasks with few observations.
 - Model: Each task m is an LTI system with states $x_t \in \mathbb{R}^n$ and dynamics $x_{t+1} = A_m x_t + \varepsilon_t$, with $\varepsilon_t \sim \mathcal{N}(0, \Sigma)$ and $\Sigma = \sigma^2 I_n$.
 - Likelihood and prior (matrix‑normal):
   - $Y \mid A \sim \mathcal{MN}(A X, \Sigma, I_T)$
@@ -25,7 +25,7 @@ pip install -e .
 
 ## Data generation (synthetic)
 
-- We generate a dataset with train/val/test splits. True meta‑parameters are:
+- I generate a dataset with train/val/test splits. True meta‑parameters are:
   - $W_\star$: stable by scaling a Gaussian matrix to spectral radius $\alpha = 0.9\,\rho_0$.
   - $V_\star = v_{\text{true}} I_n$.
   - $\Sigma_\star = \sigma_{\text{true}}^2 I_n$.
@@ -48,8 +48,8 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
 - Parameterization:
   - $V = L L^\top + \alpha I$ with unconstrained $L$ (lower‑triangular used) and $\alpha=\mathrm{softplus}(a)+10^{-6}$.
   - $\sigma^2 = \mathrm{softplus}(s) + 10^{-5}$.
-  - $W$ is free; after each optimizer step we project $W$ to spectral radius $\le \rho_0$ by uniform scaling if needed.
-- For a task minibatch $\mathcal{B}$, we compute posteriors $\{(M_m, V_m)\}$ and minimize the PAC‑Bayes surrogate: $L(\phi) = \mathbb{E}_{m \in \mathcal{B}}[ E_{\mathrm{fit},m} + \lambda_m\, \mathrm{KL}(q_m \Vert p_\phi) ] + \gamma\, \mathrm{HyperReg}(\phi) + \eta\, R_{\mathrm{stab}}(W)$, with $\lambda_m = 1/T_m$.
+  - $W$ is free; after each optimizer step I project $W$ to spectral radius $\le \rho_0$ by uniform scaling if needed.
+- For a task minibatch B, I compute posteriors {(M_m, V_m)} and minimize the PAC‑Bayes surrogate: L(φ) = E_{m∈B}[ E_fit,m + λ_m KL(q_m || p_φ) ] + γ HyperReg(φ) + η R_stab(W), with λ_m = 1/T_m.
 
 ### Terms
 
@@ -66,7 +66,7 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
 
 - Stability penalty:
   $R_{\text{stab}}(W) = \max(0, \rho(W) - \rho_0)^2$,
-  where $\rho(\cdot)$ is spectral radius (we use spectral norm as a differentiable surrogate in the loss; hard projection uses true radius post‑step).
+  where $\rho(\cdot)$ is spectral radius (I use spectral norm as a differentiable surrogate in the loss; hard projection uses true radius post‑step).
 
 ### Optimization
 
@@ -84,12 +84,12 @@ python -m bayes_lti.cli train --data data/dataset.npz --steps 2000 --batch 32 --
 
 ## Adaptation (test‑time)
 
-- Given a new task with a few observations $D_{\text{new}}=(X_{\text{new}}, Y_{\text{new}})$, we compute the posterior using the learned meta‑prior:
+- Given a new task with a few observations $D_{\text{new}}=(X_{\text{new}}, Y_{\text{new}})$, I compute the posterior using the learned meta‑prior:
   - $V_{\text{new}} = (V^{-1} + X_{\text{new}} X_{\text{new}}^\top)^{-1}$
   - $M_{\text{new}} = (W V^{-1} + Y_{\text{new}} X_{\text{new}}^\top) V_{\text{new}}$
   - $q_{\text{new}}(A) = \mathcal{MN}(M_{\text{new}}, \sigma^2 I, V_{\text{new}})$
 - Point estimate: $\hat{A} = M_{\text{new}}$ (posterior mean = MAP for Gaussian case).
-- Uncertainty: $\mathrm{Cov}(\mathrm{vec}(A)) = V_{\text{new}} \otimes (\sigma^2 I)$; we report its diagonal as a summary.
+- Uncertainty: $\mathrm{Cov}(\mathrm{vec}(A)) = V_{\text{new}} \otimes (\sigma^2 I)$; I report its diagonal as a summary.
 
 CLI:
 ```bash
