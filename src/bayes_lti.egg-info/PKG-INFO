@@ -1,0 +1,77 @@
+Metadata-Version: 2.4
+Name: bayes-lti
+Version: 0.1.0
+Summary: Bayesian meta-learning for LTI system identification with PAC-Bayes objective (PyTorch)
+Author: Bayes LTI
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.2
+Requires-Dist: numpy>=1.23
+Requires-Dist: tqdm>=4.60
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+
+# bayes-lti
+
+Bayesian meta-learning for linear time-invariant (LTI) system identification with a hierarchical matrix-normal prior and a PAC-Bayes (martingale-style) training objective. Implemented in PyTorch (float64), with a reproducible synthetic data generator, training, adaptation, and evaluation scripts.
+
+## Model
+
+ - States: $x_t \in \mathbb{R}^n$
+ - Dynamics (per task m): $x_{t+1} = A_m x_t + \varepsilon_t$, $\varepsilon_t \sim \mathcal{N}(0, \Sigma)$, $\Sigma = \sigma^2 I_n$
+ - Data matrices: $X = [x_0,\ldots,x_{T-1}] \in \mathbb{R}^{n\times T}$, $Y = [x_1,\ldots,x_T] \in \mathbb{R}^{n\times T}$
+
+Likelihood and prior (matrix-normal):
+ - $Y \mid A \sim \mathcal{MN}(A X, \Sigma, I_T)$
+ - $A \mid \phi \sim \mathcal{MN}(W, \Sigma, V)$, with $\phi=(W, V, \sigma^2)$, $V \in \mathrm{SPD}_n$
+
+Task posterior (conjugate):
+ - $V_m = (V^{-1} + X X^\top)^{-1}$
+ - $M_m = (W V^{-1} + Y X^\top) V_m$
+ - $q_m(A) = \mathcal{MN}(M_m, \Sigma, V_m)$
+
+Expected NLL (drop constants):
+$$ E_{\text{fit},m} = \tfrac{1}{2} \left[ T \log |\Sigma| + \operatorname{tr}\big(\Sigma^{-1} (Y-M_m X)(Y-M_m X)^\top\big) + n\,\operatorname{tr}(X X^\top V_m) \right] $$
+With $\Sigma=\sigma^2 I_n$: $\log|\Sigma| = n\log\sigma^2$, $\operatorname{tr}(\Sigma^{-1} \cdot) = \tfrac{1}{\sigma^2}\lVert Y-M_m X\rVert_F^2$.
+
+KL between matrix-normals with shared row covariance $\Sigma$:
+$$ \mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2}\Big[ n\log(|V|/|V_m|) - n^2 + n\operatorname{tr}(V^{-1}V_m) + \operatorname{vec}(M_m-W)^\top (V^{-1}\otimes \Sigma^{-1})\operatorname{vec}(M_m-W) \Big] $$
+With $\Sigma=\sigma^2 I_n$, last term: $\tfrac{1}{\sigma^2}\operatorname{tr}((M_m-W) V^{-1} (M_m-W)^\top)$.
+
+PAC-Bayes (martingale surrogate) for minibatch $\mathcal{B}$:
+$$ L(\phi) = \mathbb{E}_{m\in\mathcal{B}}[ E_{\text{fit},m} + \lambda_m \\mathrm{KL}(q_m\Vert p_\phi)] + \gamma\\,\\mathrm{HyperReg}(\phi) + \eta\\,R_{\\text{stab}}(W) $$
+with $\lambda_m = 1/T_m$. Hyper-regularizer:
+$$ \\mathrm{HyperReg}(\\phi) = \\tfrac{1}{2\\tau_W^2}\\lVert W\\rVert_F^2 + \\lambda_V\\,(\\tfrac{1}{2}\\lVert V-I\\rVert_F^2 - \\log\\det V) $$
+Stability penalty: $R_{\\text{stab}} = \\max(0, \\rho(W) - \\rho_0)^2$, $\\rho(\\cdot)$ spectral radius, $\\rho_0<1$.
+
+## Install
+
+```bash
+pip install -e .[dev]
+```
+
+## Usage
+
+1) Generate data
+```bash
+python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-val 40 --M-test 40 \
+  --T-min 8 --T-max 16 --sigma-true 0.1 --v-true 0.5 --rho0-gen 0.95 --seed 123
+```
+
+2) Train
+```bash
+python -m bayes_lti.cli train --data data/dataset.npz --steps 2000 --batch 32 --lr 1e-3 \
+  --tauW 5.0 --lambdaV 1e-2 --gamma 1.0 --eta 1.0 --rho0 0.98 --device cpu --seed 1
+```
+
+3) Adapt and evaluate
+```bash
+python -m bayes_lti.cli adapt --ckpt runs/last.ckpt --data-new data/dataset.npz --task-index 0 --save outputs/new_task.json
+python -m bayes_lti.cli eval --ckpt runs/last.ckpt --data data/dataset.npz --k-steps 5 --fewshot 5 --report outputs/report.json
+```
+
+## Notes
+- Double precision by default (PyTorch float64).
+- Numerically stable (Cholesky solves, no explicit inverses).
+- Hooks prepared for general $\Sigma$ and control inputs in future versions.
