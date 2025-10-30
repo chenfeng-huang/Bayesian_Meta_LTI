@@ -57,13 +57,13 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
 ### Terms
 
 - Expected fit (drop constants):
-  $$ E_{\text{fit},m} = \tfrac{1}{2} \Big[ T\log|\Sigma| + \operatorname{tr}(\Sigma^{-1}(Y-M_m X)(Y-M_m X)^\top) + n\,\operatorname{tr}(X X^\top V_m) \Big]. $$
+  $$ E_{\text{fit},m} = \tfrac{1}{2} \Big[ T\log|\Sigma| + \mathrm{tr}(\Sigma^{-1}(Y-M_m X)(Y-M_m X)^\top) + n\,\mathrm{tr}(X X^\top V_m) \Big]. $$
   With $\Sigma=\sigma^2 I$: $\log|\Sigma|=n\log\sigma^2$ and $\operatorname{tr}(\Sigma^{-1}\cdot) = \|Y-M_m X\|_F^2/\sigma^2$.
 
 - KL between matrix‑normals sharing row covariance $\Sigma$:
-  $$ \mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2} \Big[ n\log(|V|/|V_m|) - n^2 + n\operatorname{tr}(V^{-1}V_m)
-       + \operatorname{vec}(M_m-W)^\top (V^{-1}\otimes \Sigma^{-1})\operatorname{vec}(M_m-W) \Big]. $$
-  With $\Sigma=\sigma^2 I$, the last term simplifies to $\tfrac{1}{\sigma^2} \, \operatorname{tr}((M_m-W) V^{-1} (M_m-W)^\top)$ without materializing the Kronecker product.
+  $$ \mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2} \Big[ n\log(|V|/|V_m|) - n^2 + n\mathrm{tr}(V^{-1}V_m)
+       + \mathrm{vec}(M_m-W)^\top (V^{-1}\otimes \Sigma^{-1})\mathrm{vec}(M_m-W) \Big]. $$
+  With $\Sigma=\sigma^2 I$, the last term simplifies to $\tfrac{1}{\sigma^2} \, \mathrm{tr}((M_m-W) V^{-1} (M_m-W)^\top)$ without materializing the Kronecker product.
 
 - Hyper‑regularizer:
   $$ \mathrm{HyperReg}(\phi) = \tfrac{1}{2\tau_W^2}\|W\|_F^2 + \lambda_V\,\big( \tfrac{1}{2}\|V-I\|_F^2 - \log\det V \big). $$
