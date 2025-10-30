@@ -49,9 +49,7 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
   - $V = L L^\top + \alpha I$ with unconstrained $L$ (lower‑triangular used) and $\alpha=\mathrm{softplus}(a)+10^{-6}$.
   - $\sigma^2 = \mathrm{softplus}(s) + 10^{-5}$.
   - $W$ is free; after each optimizer step we project $W$ to spectral radius $\le \rho_0$ by uniform scaling if needed.
-- For a task minibatch $\mathcal{B}$, we compute posteriors $\{(M_m, V_m)\}$ and minimize the PAC‑Bayes surrogate:
-  $L(\phi) = \mathbb{E}_{m\in\mathcal{B}}\big[ E_{\text{fit},m} + \lambda_m \, \mathrm{KL}(q_m\Vert p_\phi) \big] + \gamma\,\mathrm{HyperReg}(\phi) + \eta\,R_{\text{stab}}(W)$,
-  with $\lambda_m = 1/T_m$.
+- For a task minibatch $\mathcal{B}$, we compute posteriors $\{(M_m, V_m)\}$ and minimize the PAC‑Bayes surrogate: $L(\phi) = \mathbb{E}_{m \in \mathcal{B}}[ E_{\mathrm{fit},m} + \lambda_m\, \mathrm{KL}(q_m \Vert p_\phi) ] + \gamma\, \mathrm{HyperReg}(\phi) + \eta\, R_{\mathrm{stab}}(W)$, with $\lambda_m = 1/T_m$.
 
 ### Terms
 
