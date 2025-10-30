@@ -5,8 +5,7 @@ This document describes the full pipeline for Bayesian meta‑learning of LTI sy
 ## Overview
 
 - Goal: Learn a hierarchical prior over task dynamics matrices so that we can adapt quickly to new tasks with few observations.
-- Model: Each task m is an LTI system with states $x_t \in \mathbb{R}^n$ and dynamics
-  $$ x_{t+1} = A_m x_t + \varepsilon_t, \quad \varepsilon_t \sim \mathcal{N}(0, \Sigma), \; \Sigma = \sigma^2 I_n. $$
+- Model: Each task m is an LTI system with states $x_t \in \mathbb{R}^n$ and dynamics $x_{t+1} = A_m x_t + \varepsilon_t$, with $\varepsilon_t \sim \mathcal{N}(0, \Sigma)$ and $\Sigma = \sigma^2 I_n$.
 - Likelihood and prior (matrix‑normal):
   - $Y \mid A \sim \mathcal{MN}(A X, \Sigma, I_T)$
   - $A \mid \phi \sim \mathcal{MN}(W, \Sigma, V)$ with meta‑parameters $\phi=(W,V,\sigma^2)$
@@ -51,25 +50,24 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
   - $\sigma^2 = \mathrm{softplus}(s) + 10^{-5}$.
   - $W$ is free; after each optimizer step we project $W$ to spectral radius $\le \rho_0$ by uniform scaling if needed.
 - For a task minibatch $\mathcal{B}$, we compute posteriors $\{(M_m, V_m)\}$ and minimize the PAC‑Bayes surrogate:
-  $$ L(\phi) = \mathbb{E}_{m\in\mathcal{B}}\big[ E_{\text{fit},m} + \lambda_m \, \mathrm{KL}(q_m\Vert p_\phi) \big] + \gamma\,\mathrm{HyperReg}(\phi) + \eta\,R_{\text{stab}}(W), $$
+  $L(\phi) = \mathbb{E}_{m\in\mathcal{B}}\big[ E_{\text{fit},m} + \lambda_m \, \mathrm{KL}(q_m\Vert p_\phi) \big] + \gamma\,\mathrm{HyperReg}(\phi) + \eta\,R_{\text{stab}}(W)$,
   with $\lambda_m = 1/T_m$.
 
 ### Terms
 
 - Expected fit (drop constants):
-  $$ E_{\text{fit},m} = \tfrac{1}{2} \Big[ T\log|\Sigma| + \mathrm{tr}(\Sigma^{-1}(Y-M_m X)(Y-M_m X)^\top) + n\,\mathrm{tr}(X X^\top V_m) \Big]. $$
+  $E_{\text{fit},m} = \tfrac{1}{2} \Big[ T\log|\Sigma| + \mathrm{tr}(\Sigma^{-1}(Y-M_m X)(Y-M_m X)^\top) + n\,\mathrm{tr}(X X^\top V_m) \Big]$.
   With $\Sigma=\sigma^2 I$: $\log|\Sigma|=n\log\sigma^2$ and $\mathrm{tr}(\Sigma^{-1}\cdot) = \|Y-M_m X\|_F^2/\sigma^2$.
 
 - KL between matrix‑normals sharing row covariance $\Sigma$:
-  $$ \mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2} \Big[ n\log(|V|/|V_m|) - n^2 + n\mathrm{tr}(V^{-1}V_m)
-       + \mathrm{vec}(M_m-W)^\top (V^{-1}\otimes \Sigma^{-1})\mathrm{vec}(M_m-W) \Big]. $$
+  $\mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2} \Big[ n\log(|V|/|V_m|) - n^2 + n\mathrm{tr}(V^{-1}V_m) + \mathrm{vec}(M_m-W)^\top (V^{-1}\otimes \Sigma^{-1})\mathrm{vec}(M_m-W) \Big]$.
   With $\Sigma=\sigma^2 I$, the last term simplifies to $\tfrac{1}{\sigma^2} \, \mathrm{tr}((M_m-W) V^{-1} (M_m-W)^\top)$ without materializing the Kronecker product.
 
 - Hyper‑regularizer:
-  $$ \mathrm{HyperReg}(\phi) = \tfrac{1}{2\tau_W^2}\|W\|_F^2 + \lambda_V\,\big( \tfrac{1}{2}\|V-I\|_F^2 - \log\det V \big). $$
+  $\mathrm{HyperReg}(\phi) = \tfrac{1}{2\tau_W^2}\|W\|_F^2 + \lambda_V\,\big( \tfrac{1}{2}\|V-I\|_F^2 - \log\det V \big)$.
 
 - Stability penalty:
-  $$ R_{\text{stab}}(W) = \max(0, \rho(W) - \rho_0)^2, $$
+  $R_{\text{stab}}(W) = \max(0, \rho(W) - \rho_0)^2$,
   where $\rho(\cdot)$ is spectral radius (we use spectral norm as a differentiable surrogate in the loss; hard projection uses true radius post‑step).
 
 ### Optimization
