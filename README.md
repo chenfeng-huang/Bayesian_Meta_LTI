@@ -21,7 +21,7 @@ This document describes the full pipeline for Bayesian meta‑learning of LTI sy
 ```bash
 python -m pip install -r requirements.txt
 
-pip install -e .[dev]
+pip install -e .
 ```
 
 ## Data generation (synthetic)
@@ -58,7 +58,7 @@ python -m bayes_lti.cli generate --out data/dataset.npz --n 4 --M-train 200 --M-
 
 - Expected fit (drop constants):
   $$ E_{\text{fit},m} = \tfrac{1}{2} \Big[ T\log|\Sigma| + \mathrm{tr}(\Sigma^{-1}(Y-M_m X)(Y-M_m X)^\top) + n\,\mathrm{tr}(X X^\top V_m) \Big]. $$
-  With $\Sigma=\sigma^2 I$: $\log|\Sigma|=n\log\sigma^2$ and $\operatorname{tr}(\Sigma^{-1}\cdot) = \|Y-M_m X\|_F^2/\sigma^2$.
+  With $\Sigma=\sigma^2 I$: $\log|\Sigma|=n\log\sigma^2$ and $\mathrm{tr}(\Sigma^{-1}\cdot) = \|Y-M_m X\|_F^2/\sigma^2$.
 
 - KL between matrix‑normals sharing row covariance $\Sigma$:
   $$ \mathrm{KL}(q_m\Vert p_\phi) = \tfrac{1}{2} \Big[ n\log(|V|/|V_m|) - n^2 + n\mathrm{tr}(V^{-1}V_m)
@@ -93,7 +93,7 @@ python -m bayes_lti.cli train --data data/dataset.npz --steps 2000 --batch 32 --
   - $M_{\text{new}} = (W V^{-1} + Y_{\text{new}} X_{\text{new}}^\top) V_{\text{new}}$
   - $q_{\text{new}}(A) = \mathcal{MN}(M_{\text{new}}, \sigma^2 I, V_{\text{new}})$
 - Point estimate: $\hat{A} = M_{\text{new}}$ (posterior mean = MAP for Gaussian case).
-- Uncertainty: $\mathrm{Cov}(\operatorname{vec}(A)) = V_{\text{new}} \otimes (\sigma^2 I)$; we report its diagonal as a summary.
+- Uncertainty: $\mathrm{Cov}(\mathrm{vec}(A)) = V_{\text{new}} \otimes (\sigma^2 I)$; we report its diagonal as a summary.
 
 CLI:
 ```bash
